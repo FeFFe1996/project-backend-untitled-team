@@ -99,7 +99,7 @@ public class S3Service {
                 .key(filename));
     }
 
-    public List<UploadedFile> createFile(CaseEntity caseEntity, String s3Key) {
+    public UploadedFile createFile(CaseEntity caseEntity, String s3Key) {
         UploadedFile uploadedFile = new UploadedFile();
         uploadedFile.setUploadedBy(caseEntity.getOwner());
         uploadedFile.setAssociatedCase(caseEntity);
@@ -107,7 +107,6 @@ public class S3Service {
         int indexOfSlash = s3Key.lastIndexOf('/');
         String fileName = s3Key.substring(indexOfSlash + 1);
         uploadedFile.setFilename(fileName);
-
-        return List.of(uploadedFile);
+        return uploadedFile;
     }
 }

@@ -5,6 +5,7 @@ import org.example.untitled.user.Role;
 import org.example.untitled.user.service.UserService;
 import org.example.untitled.usercase.AuditLog;
 import org.example.untitled.usercase.CaseStatus;
+import org.example.untitled.usercase.UploadedFile;
 import org.example.untitled.usercase.dto.CaseEntityDto;
 import org.example.untitled.usercase.dto.CommentDto;
 import org.example.untitled.usercase.dto.CreateCaseRequest;
@@ -43,8 +44,7 @@ public class CaseController {
     private final UserService userService;
     private static final Logger log = LoggerFactory.getLogger(CaseController.class);
 
-    public CaseController(CaseService caseService, CommentService commentService,
-                          AuditLogService auditLogService, UserService userService) {
+    public CaseController(CaseService caseService, CommentService commentService, AuditLogService auditLogService, UserService userService) {
         this.caseService = caseService;
         this.commentService = commentService;
         this.auditLogService = auditLogService;
@@ -101,6 +101,7 @@ public class CaseController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this ticket");
 
         List<CommentDto> comments = commentService.getCommentsByTicketId(id);
+        List<UploadedFile> files = caseService.getTicketFiles(id);
         List<AuditLog> auditLogs = auditLogService.getLogsForCase(id);
         Map<Long, String> auditUserMap = buildAuditUserMap(auditLogs);
 
@@ -111,6 +112,7 @@ public class CaseController {
         model.addAttribute("canComment", perms.canComment());
         model.addAttribute("auditLogs", auditLogs);
         model.addAttribute("auditUserMap", auditUserMap);
+        model.addAttribute("files", files);
         return "ticket";
     }
 

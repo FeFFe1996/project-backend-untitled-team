@@ -5,6 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Ticket</title>
+
+    <script th:src="@{/js/script.js}" defer></script>
     <link rel="stylesheet" th:href="@{/style.css}"/>
 </head>
 <body>
@@ -58,8 +60,14 @@
                       th:errors="*{text}"
                       class="field-error"></span>
             </div>
+            <div>
+                <input type="hidden" id="fileNameHidden">
+                <input type="file" id="fileInput" multiple>
+                <p id="status"></p>
+            </div>
+            <div id="hidden-file-inputs"></div>
             <div style="margin-top: 12px;">
-                <button type="submit" class="btn">Add Comment</button>
+                <button onclick="uploadNewFile()" type="submit" class="btn" id="submitBtn">Add Comment</button>
             </div>
         </form>
     </div>
@@ -76,6 +84,17 @@
                    th:text="${#temporals.format(entry.timestamp, 'yyyy-MM-dd HH:mm')}"></p>
             </div>
         </div>
+    </div>
+    <div class="show-files">
+            <tr th:each="file : ${files}">
+                <td th:text="${file.getFilename()}"></td>
+                <td>
+                    <button th:data-file="${file.getS3Key()}"
+                            onclick="downloadFile(this.getAttribute('data-file'))"
+                            class="button">Download</button>
+                </td>
+            </tr>
+
     </div>
 
     <footer style="margin-top: 24px;">

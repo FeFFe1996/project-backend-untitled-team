@@ -17,6 +17,8 @@ import org.example.untitled.usercase.dto.CreateCaseRequest;
 import org.example.untitled.usercase.dto.CreateCommentRequest;
 import org.example.untitled.usercase.mapper.CaseMapper;
 import org.example.untitled.usercase.repository.CaseRepository;
+import org.example.untitled.usercase.repository.UploadedFileRepository;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class CaseService {
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
     private final CommentService commentService;
+    private final UploadedFileRepository uploadedFileRepository;
     private final S3Service s3Service;
 
     public CaseService(
@@ -41,12 +44,14 @@ public class CaseService {
             UserRepository userRepository,
             CommentService commentService,
             S3Service s3Service,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            UploadedFileRepository fileRepository) {
         this.caseRepository = caseRepository;
         this.userRepository = userRepository;
         this.commentService = commentService;
         this.auditLogService = auditLogService;
         this.s3Service = s3Service;
+        this.uploadedFileRepository = fileRepository;
     }
 
     @Transactional
@@ -64,7 +69,9 @@ public class CaseService {
         if (request.getFileNames() != null) {
             for (String fName : request.getFileNames()) {
                 if (fName == null || fName.isBlank()) continue;
-                caseEntity.getFiles().addAll(s3Service.createFile(caseEntity, fName));
+                UploadedFile uploadFile = s3Service.createFile(caseEntity, fName);
+                uploadedFileRepository.save(uploadFile);
+                caseEntity.getFiles().add(uploadFile);
             }
         }
         CaseEntity saved = caseRepository.save(caseEntity);
@@ -102,7 +109,9 @@ public class CaseService {
                     .collect(Collectors.toSet());
             for (String fName : request.getFileNames()) {
                 if (fName == null || fName.isBlank() || existing.contains(fName)) continue;
-                caseEntity.getFiles().addAll(s3Service.createFile(caseEntity, fName));
+                UploadedFile uploadFile = s3Service.createFile(caseEntity, fName);
+                uploadedFileRepository.save(uploadFile);
+                caseEntity.getFiles().add(uploadFile);
             }
         }
         CaseEntity saved = caseRepository.save(caseEntity);
@@ -171,11 +180,25 @@ public class CaseService {
         return CaseMapper.toDto(caseEntity);
     }
 
+    public List<UploadedFile> getTicketFiles(long id) {
+        CaseEntity caseEntity = caseRepository.findById(id)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found: " + id));
+
+        return uploadedFileRepository.associatedCaseEntity(caseEntity).stream()
+                .toList();
+    }
     public User findOwnerById(long id) {
         return caseRepository.findOwnerById(id);
     }
 
     public boolean isNotOwner(CaseEntityDto ticket, String username) {
         return !ticket.ownerUsername().equals(username);
+    }
+
+    public @Nullable List<UploadedFile> getUserFiles(String username) {
+        User actor = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return uploadedFileRepository.getUploadedFilesByUploadedBy(actor);
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+
 @Controller
 public class UserController {
 
@@ -83,5 +84,11 @@ public class UserController {
             return "register_user";
         }
         return "redirect:/login";
+    }
+
+    @GetMapping("/tickets/upload")
+    public String getUserTickets(Model model, @AuthenticationPrincipal UserDetails userDetails){
+        model.addAttribute("files", caseService.getUserFiles(userDetails.getUsername()));
+        return "upload";
     }
 }
